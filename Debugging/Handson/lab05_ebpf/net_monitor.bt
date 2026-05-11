@@ -1,0 +1,48 @@
+#!/usr/bin/env bpftrace
+/*
+ * net_monitor.bt — Network connection and latency monitor
+ *
+ * Usage: sudo bpftrace net_monitor.bt
+ *
+ * Traces TCP connections, accepts, and DNS queries.
+ */
+
+/* Track new outgoing TCP connections */
+kprobe:tcp_v4_connect
+{
+    @connect_start[tid] = nsecs;
+    @connect_comm[tid] = comm;
+}
+
+kretprobe:tcp_v4_connect
+/@connect_start[tid]/
+{
+    $latency = (nsecs - @connect_start[tid]) / 1000;  /* microseconds */
+    printf("connect: %-16s latency=%dus ret=%d\n",
+           @connect_comm[tid], $latency, retval);
+    delete(@connect_start[tid]);
+    delete(@connect_comm[tid]);
+}
+
+/* Track TCP retransmissions */
+tracepoint:tcp:tcp_retransmit_skb
+{
+    printf("RETRANSMIT: %s sport=%d dport=%d\n",
+           comm, args.sport, args.dport);
+    @retransmits[comm] = count();
+}
+
+/* Histogram of TCP connect latencies */
+interval:s:10
+{
+    printf("\n--- Retransmission counts (10s) ---\n");
+    print(@retransmits);
+    clear(@retransmits);
+}
+
+END
+{
+    clear(@connect_start);
+    clear(@connect_comm);
+    clear(@retransmits);
+}

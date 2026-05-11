@@ -1,0 +1,24 @@
+// my_overlay.dts — Device Tree Overlay Example
+// Compile: dtc -@ -I dts -O dtb -o my_overlay.dtbo my_overlay.dts
+// RPi: copy to /boot/overlays/ and add dtoverlay=my_overlay to config.txt
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2711";  /* RPi 4 — adjust for your board */
+
+    fragment@0 {
+        target-path = "/";
+        __overlay__ {
+            my_virtual_device {
+                compatible = "lab,mydevice";
+                status = "okay";
+                my-custom-prop = <42>;
+                label = "Lab20 Virtual Device";
+                my-string-array = "hello", "world";
+                my-flag;   /* boolean property */
+            };
+        };
+    };
+};

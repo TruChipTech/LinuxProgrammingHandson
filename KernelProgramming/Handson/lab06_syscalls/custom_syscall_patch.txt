@@ -1,0 +1,57 @@
+# Patch reference for adding a custom syscall
+# This is a guide — not a directly-applicable patch.
+# Apply manually to your kernel source tree.
+
+=== Step 1: Add syscall number ===
+File: arch/x86/entry/syscalls/syscall_64.tbl
+
+Add at the end (pick the next available number):
+451  common  hello   sys_hello
+
+=== Step 2: Add function prototype ===
+File: include/linux/syscalls.h
+
+Add before the #endif at the end:
+asmlinkage long sys_hello(const char __user *name, size_t len);
+
+=== Step 3: Implement the syscall ===
+Create file: kernel/sys_hello.c
+
+---Content of kernel/sys_hello.c---
+#include <linux/kernel.h>
+#include <linux/syscalls.h>
+#include <linux/uaccess.h>
+
+SYSCALL_DEFINE2(hello, const char __user *, name, size_t, len)
+{
+    char kbuf[64];
+
+    if (len == 0 || len > sizeof(kbuf) - 1)
+        return -EINVAL;
+
+    if (copy_from_user(kbuf, name, len))
+        return -EFAULT;
+
+    kbuf[len] = '\0';
+
+    pr_info("sys_hello: Hello from kernel, %s! (pid=%d)\n",
+            kbuf, current->pid);
+
+    return 0;
+}
+---End---
+
+=== Step 4: Add to kernel Makefile ===
+File: kernel/Makefile
+
+Find the line:
+obj-y = fork.o exec_domain.o panic.o ...
+
+Add sys_hello.o to the list:
+obj-y += sys_hello.o
+
+=== Step 5: Build and test ===
+make -j$(nproc)
+
+Then boot in QEMU and run the test_hello_syscall program.
+Check dmesg for the "Hello from kernel" message.

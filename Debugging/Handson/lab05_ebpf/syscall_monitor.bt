@@ -1,0 +1,35 @@
+#!/usr/bin/env bpftrace
+/*
+ * syscall_monitor.bt — Monitor syscalls by process
+ *
+ * Usage: sudo bpftrace syscall_monitor.bt
+ *
+ * Shows top syscall-making processes every 5 seconds.
+ */
+
+tracepoint:raw_syscalls:sys_enter
+{
+    @syscalls[comm] = count();
+}
+
+tracepoint:syscalls:sys_enter_openat
+{
+    printf("open: %-16s %s\n", comm, str(args.filename));
+}
+
+tracepoint:sched:sched_process_exec
+{
+    printf("exec: %-16s pid=%d\n", comm, pid);
+}
+
+interval:s:5
+{
+    printf("\n--- Top syscall makers (5s window) ---\n");
+    print(@syscalls, 10);
+    clear(@syscalls);
+}
+
+END
+{
+    clear(@syscalls);
+}

@@ -1,0 +1,24 @@
+// i2c_sensor_overlay.dts — I2C Sensor DT Overlay for RPi
+// Compile: dtc -@ -I dts -O dtb -o i2c_sensor_overlay.dtbo i2c_sensor_overlay.dts
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2711";
+
+    fragment@0 {
+        target = <&i2c1>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+            status = "okay";
+
+            my_sensor@68 {
+                compatible = "lab,my-i2c-sensor";
+                reg = <0x68>;
+                status = "okay";
+            };
+        };
+    };
+};

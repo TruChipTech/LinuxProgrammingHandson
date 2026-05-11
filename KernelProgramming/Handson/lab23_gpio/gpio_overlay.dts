@@ -1,0 +1,26 @@
+// gpio_overlay.dts — GPIO Demo Device Tree Overlay for RPi
+// Compile: dtc -@ -I dts -O dtb -o gpio_overlay.dtbo gpio_overlay.dts
+// Copy to /boot/overlays/ and add dtoverlay=gpio_overlay to config.txt
+
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2711";
+
+    fragment@0 {
+        target-path = "/";
+        __overlay__ {
+            gpio_demo_device {
+                compatible = "lab,gpio-demo";
+                status = "okay";
+
+                /* LED on GPIO17, active high */
+                led-gpios = <&gpio 17 0>;  /* 0 = GPIO_ACTIVE_HIGH */
+
+                /* Button on GPIO27, active low (pull-up) */
+                button-gpios = <&gpio 27 1>;  /* 1 = GPIO_ACTIVE_LOW */
+            };
+        };
+    };
+};
